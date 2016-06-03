@@ -55,12 +55,79 @@ void loop() {
 
 //-----------------------------------------------------------------------
 
+/**
+ * Print the time and the temperature
+ */
 void printInformationOnLcd(){
   lcd.setCursor(0,0);
   lcd.print(getStringTime());  
-  lcd.print(" ");
+  lcd.print("  ");
   lcd.print(getTemperature());
+  
+  lcd.setCursor(0,1);
+  lcd.print(getGreeting());
 }
+
+
+
+//-----------------------------------------------------------------------
+
+//http://forum.arduino.cc/index.php?topic=18588.0
+String getStringTime()
+{
+  char buffer[20];
+  unsigned long milliSeconds = millis();// + offSetTimeMilliSecs;
+
+  int secs  = milliSeconds / 1000; // secs is the total number of number of seconds
+  int fracTime = milliSeconds % 1000; // fracTime the number of thousandths of a second  
+
+  // number of days is total number of seconds divided by 24 divided by 3600
+  int days = secs / (HOURS_IN_A_DAY*SECONDS_IN_A_DAY);
+  secs = secs % (HOURS_IN_A_DAY*SECONDS_IN_A_DAY);
+
+  // get the hours
+  int hours = (secs / SECONDS_IN_A_DAY) + offSetHours;
+  secs  = secs % SECONDS_IN_A_DAY;
+
+  // get the minutes
+  int mins = (secs / SECONDS_IN_A_HOUR) + offSetMins;
+  secs = secs % SECONDS_IN_A_HOUR;
+
+  sprintf(buffer, "%02d:%02d:%02d", hours, mins, secs);
+ 
+  currentHours = hours;
+  currentMins = mins;
+  return buffer;
+}
+
+//-----------------------------------------------------------------------
+
+float getTemperature() {
+  int sensorVal = analogRead(TEMPERATURE_SENSOR_PIN);
+  //Serial.println(sensorVal);
+  float voltage = sensorVal * 3.3; // yes I could use const, but nice to keep all temperature related stuff compacted to here.
+  voltage /= 1024.0; 
+  float temprature = (voltage - 0.5)*100;
+  return temprature;
+}
+
+//-----------------------------------------------------------------------
+
+String getGreeting() {
+  if (currentHours < 4 || currentHours > 22) {
+    return "Goedenacht";
+  } else if (currentHours < 12) {
+      return "Goedemorgen";
+  } else if (currentHours < 18) {
+    return "Goedenmiddag";
+  } else if (currentHours < 22) {
+    return "Goedenavond";
+  } 
+}
+
+//-----------------------------------------------------------------------
+
+//======== Code to set the alarm and the Time ===========//
 
 //-----------------------------------------------------------------------
 
@@ -171,49 +238,6 @@ void changeState(){
       switchState = digitalRead(SET_TIME_BUTTON_PIN);
     }
   }
-
-  //Serial.println(currentState);
-}
-
-//-----------------------------------------------------------------------
-
-//http://forum.arduino.cc/index.php?topic=18588.0
-String getStringTime()
-{
-  char buffer[20];
-  unsigned long milliSeconds = millis();// + offSetTimeMilliSecs;
-
-  int secs  = milliSeconds / 1000; // secs is the total number of number of seconds
-  int fracTime = milliSeconds % 1000; // fracTime the number of thousandths of a second  
-
-  // number of days is total number of seconds divided by 24 divided by 3600
-  int days = secs / (HOURS_IN_A_DAY*SECONDS_IN_A_DAY);
-  secs = secs % (HOURS_IN_A_DAY*SECONDS_IN_A_DAY);
-
-  // get the hours
-  int hours = (secs / SECONDS_IN_A_DAY) + offSetHours;
-  secs  = secs % SECONDS_IN_A_DAY;
-
-  // get the minutes
-  int mins = (secs / SECONDS_IN_A_HOUR) + offSetMins;
-  secs = secs % SECONDS_IN_A_HOUR;
-
-  sprintf(buffer, "%02d:%02d:%02d", hours, mins, secs);
- 
-  currentHours = hours;
-  currentMins = mins;
-  return buffer;
-}
-
-//-----------------------------------------------------------------------
-
-float getTemperature() {
-  int sensorVal = analogRead(TEMPERATURE_SENSOR_PIN);
-  //Serial.println(sensorVal);
-  float voltage = sensorVal * 3.3;
-  voltage /= 1024.0; 
-  float temprature = (voltage - 0.5)*100;
-  return temprature;
 }
 
 //-----------------------------------------------------------------------
