@@ -10,27 +10,18 @@
 
 LiquidCrystal lcd(7, 8, 9, 10, 11, 13);
 
-const long SECONDS_IN_A_DAY = 3600;
-const long HOURS_IN_A_DAY = 24;
-const long SECONDS_IN_A_HOUR = 60;
+const unsigned long SECONDS_IN_A_DAY = 3600;
+const unsigned long HOURS_IN_A_DAY = 24;
+const unsigned long SECONDS_IN_A_HOUR = 60;
+const unsigned long MILLISECONDS_IN_A_SECOND = 1000;
 
-int offSetHours = 0;
-int offSetMins = 0;
+unsigned long currentHours = 0;
+unsigned long currentMins = 0;
 
-int currentHours = 0;
-int currentMins = 0;
+unsigned long alarmHour = 0;
+unsigned long alarmMin = 0;
 
-int alarmHour = 0;
-int alarmMin = 0;
-
-enum state {
-  state_none,
-  state_setAlarmMin,
-  state_setAlarmHour,
-  state_setTimeHour,
-  state_setTimeMin  
-};
-state currentState = state_none;
+unsigned long offSetTimeMilliSecs = 0;
 
 //-----------------------------------------------------------------------
 
@@ -76,21 +67,21 @@ void printInformationOnLcd(){
 String getStringTime()
 {
   char buffer[20];
-  unsigned long milliSeconds = millis();// + offSetTimeMilliSecs;
+  unsigned long milliSeconds = millis() + offSetTimeMilliSecs;
 
-  int secs  = milliSeconds / 1000; // secs is the total number of number of seconds
-  int fracTime = milliSeconds % 1000; // fracTime the number of thousandths of a second  
+  unsigned long secs  = milliSeconds / MILLISECONDS_IN_A_SECOND; // secs is the total number of number of seconds
+  int fracTime = milliSeconds % MILLISECONDS_IN_A_SECOND; // fracTime the number of thousandths of a second  
 
   // number of days is total number of seconds divided by 24 divided by 3600
   int days = secs / (HOURS_IN_A_DAY*SECONDS_IN_A_DAY);
   secs = secs % (HOURS_IN_A_DAY*SECONDS_IN_A_DAY);
 
   // get the hours
-  int hours = (secs / SECONDS_IN_A_DAY) + offSetHours;
+  int hours = (secs / SECONDS_IN_A_DAY);// + offSetHours;
   secs  = secs % SECONDS_IN_A_DAY;
 
   // get the minutes
-  int mins = (secs / SECONDS_IN_A_HOUR) + offSetMins;
+  int mins = (secs / SECONDS_IN_A_HOUR);// + offSetMins;
   secs = secs % SECONDS_IN_A_HOUR;
 
   sprintf(buffer, "%02d:%02d:%02d", hours, mins, secs);
@@ -131,7 +122,21 @@ String getGreeting() {
 
 //-----------------------------------------------------------------------
 
+enum state {
+  state_none,
+  state_setAlarmMin,
+  state_setAlarmHour,
+  state_setTimeHour,
+  state_setTimeMin  
+};
+state currentState = state_none;
+
+//-----------------------------------------------------------------------
+
 void setTimeAndAlarm() {
+  unsigned long offSetHours = 0;
+  unsigned long offSetMins = 0;
+  
   changeState();
   while (currentState != state_none){
     lcd.cursor();
@@ -160,22 +165,24 @@ void setTimeAndAlarm() {
    
     changeState();
     delay(300);
-  }
+  } 
+  
+  offSetTimeMilliSecs = offSetTimeMilliSecs + (offSetHours * 3600000) + (offSetMins * 60000);  
   lcd.noCursor();
 }
 
 //-----------------------------------------------------------------------
 
-void changeTimeValue(int* currentTime, int* offSetTime, int maxValue){
+void changeTimeValue(unsigned long* currentTime, unsigned long* offSetTime, unsigned long maxValue){
   char buffer[20];
   int changeTimeAmount = digitalRead(SET_ALARM_PLUS_BUTTON_PIN);
   changeTimeAmount -= digitalRead(MINUS_BUTTON_PIN);
 
   //----- update the off set --------//
-  if (offSetTime) {
+  //if (offSetTime) {
     *offSetTime += changeTimeAmount;   
     checkTimeValueInRange(offSetTime, maxValue);
-  }
+ // }
 
   //----- update the current time and display it --------//
   *currentTime += changeTimeAmount;
@@ -187,7 +194,7 @@ void changeTimeValue(int* currentTime, int* offSetTime, int maxValue){
 
 //-----------------------------------------------------------------------
 
-void checkTimeValueInRange(int* timeValue, int maxValue) {
+void checkTimeValueInRange(unsigned long* timeValue, unsigned long maxValue) {
   if (*timeValue == maxValue) { // so that the max hours/mins is 23/59
     *timeValue = 0;
   } 
